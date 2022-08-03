@@ -16,15 +16,15 @@ public:
 
 	typedef struct MF_QUEUE_INFO
 	{
-		std::string QueueName;
-		time_t timeout;
-		size_t maxLen;
-		int protocol;
+		std::string QueueName = "";
+		time_t timeout = 100;
+		size_t maxLen = -1;
+		int protocol = SOCK_DGRAM;
 
 		volatile WhoIAm whoIAm = IAmUnknown;
 
 		//int nQueuesConnected;
-		int nChannels;
+		int nChannels = 1;
 		//int nObjectsHave;
 		//int nObjectsMax;
 		//int nObjectsDropped;

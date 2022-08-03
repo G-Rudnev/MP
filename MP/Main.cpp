@@ -69,7 +69,7 @@ void get_(MFQueue<MF_BUFFER>& q, std::shared_ptr<MF_BUFFER>& pBuf) {
 		q.Close();
 }
 
-//#define IamSERVER
+#define IamSERVER
 
 int main() {
 
