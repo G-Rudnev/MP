@@ -504,7 +504,8 @@ struct MFQueue : public IMFQueue<T> {
 		if (_onLine) {
 			_onLine = false;
 
-			mainThread.join();
+			if (mainThread.joinable())
+				mainThread.join();
 
 			return S_OK;
 		}
