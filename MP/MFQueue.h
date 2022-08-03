@@ -55,9 +55,9 @@ struct MFQueue : public IMFQueue<T> {
 
 	int addressLen = sizeof(sockaddr_in);
 
-	//Initializes the remote behaviour of the queue object - makes it online. Returns S_OK on success, otherwise returns S_FALSE.
-	//If failed, closes all that it has opened.
-	HRESULT Init(/*[in]*/ const std::string& strQueueID, bool asServer = false, size_t maxLen = 64, time_t timeout = 100) override {
+	//Places this queue object online, initializes the remote behaviour of it. Returns S_OK on success, otherwise returns S_FALSE.
+	//In the case of fail, closes all that it has opened.
+	HRESULT Place(/*[in]*/ const std::string& strQueueID, bool asServer = false, size_t maxLen = 64, time_t timeout = 100) override {
 
 		std::lock_guard _li(infoMutex);
 
@@ -81,14 +81,14 @@ struct MFQueue : public IMFQueue<T> {
 			info.timeout = timeout;
 			info.maxLen = maxLen;
 
-			//INIT SEREVER LOOP with the init promise
-			std::promise<HRESULT> _initErrPromise;
+			//INIT SERVER LOOP with the place promise
+			std::promise<HRESULT> _placeErrPromise;
 			if (asServer)
-				mainThread = std::thread(&MFQueue::ServerLoop, this, std::ref(_initErrPromise));
+				mainThread = std::thread(&MFQueue::ServerLoop, this, std::ref(_placeErrPromise));
 			else
-				mainThread = std::thread(&MFQueue::ClientLoop, this, std::ref(_initErrPromise));
+				mainThread = std::thread(&MFQueue::ClientLoop, this, std::ref(_placeErrPromise));
 
-			if (_initErrPromise.get_future().get() != S_OK) {
+			if (_placeErrPromise.get_future().get() != S_OK) {
 				mainThread.join();
 				return S_FALSE;
 			}
@@ -114,7 +114,7 @@ struct MFQueue : public IMFQueue<T> {
 	//S_OK - on success, 
 	//E_BOUNDS - if queue is full,
 	//S_FALSE - on error which is moderate,
-	//E_ABORT - on error which is hard, so that way you have to call Close().
+	//E_ABORT - on error which is hard, so that way you have to call Release().
 	//If this is not a client returns only S_OK or E_BOUNDS.
 	HRESULT Put(/*[in]*/ const std::shared_ptr<T>& pData) override {
 
@@ -124,7 +124,7 @@ struct MFQueue : public IMFQueue<T> {
 		std::lock_guard _li(infoMutex);
 
 		if (!_onLine)
-			printf("Note: the queue is offline, call Init() method.\n");
+			printf("Note: the queue is offline, call Place() method.\n");
 
 		std::lock_guard _ld(_dataMutex);
 
@@ -240,7 +240,7 @@ struct MFQueue : public IMFQueue<T> {
 	//S_OK - on success, 
 	//E_BOUNDS - if queue is empty,
 	//S_FALSE - on error which is moderate,
-	//E_ABORT - on error which is hard, so that way you have to call Close().
+	//E_ABORT - on error which is hard, so that way you have to call Release().
 	//If this is not a client returns only S_OK or E_BOUNDS.
 	HRESULT Get(/*[out]*/ std::shared_ptr<T>& pData, bool andPop = true) override {
 		
@@ -250,7 +250,7 @@ struct MFQueue : public IMFQueue<T> {
 		std::lock_guard _li(infoMutex);
 
 		if (!_onLine)
-			printf("Note: the queue is offline, call Init() method.\n");
+			printf("Note: the queue is offline, call Place() method.\n");
 
 		std::lock_guard _ld(_dataMutex);
 
@@ -388,7 +388,7 @@ struct MFQueue : public IMFQueue<T> {
 	//Returns:
 	//S_OK - on success, 
 	//S_FALSE - on error which is moderate,
-	//E_ABORT - on error which is hard, so that way you have to call Close().
+	//E_ABORT - on error which is hard, so that way you have to call Release().
 	//If this is not a client returns only S_OK.
 	HRESULT Size(size_t& size) override{
 		std::lock_guard _li(infoMutex);
@@ -425,7 +425,7 @@ struct MFQueue : public IMFQueue<T> {
 	//Returns:
 	//S_OK - on success, 
 	//S_FALSE - on error which is moderate,
-	//E_ABORT - on error which is hard, so that way you have to call Close().
+	//E_ABORT - on error which is hard, so that way you have to call Release().
 	//If this is not a client returns only S_OK.
 	HRESULT Pop() override {
 
@@ -461,7 +461,7 @@ struct MFQueue : public IMFQueue<T> {
 	//Returns:
 	//S_OK - on success, 
 	//S_FALSE - on error which is moderate,
-	//E_ABORT - on error which is hard, so that way you have to call Close().
+	//E_ABORT - on error which is hard, so that way you have to call Release().
 	//If this is not a client returns only S_OK.
 	HRESULT Clear() override {
 
@@ -496,10 +496,10 @@ struct MFQueue : public IMFQueue<T> {
 
 	}
 
-	//Closes the remote behaviour of the queue object - makes it offline.
+	//Releases this queue object from online and makes it offline.
 	//Does not clear the queue.
 	//Returns S_FALSE if this object is offline, otherwise returns S_OK.
-	HRESULT Close() noexcept override {
+	HRESULT Release() noexcept override {
 
 		if (_onLine) {
 			_onLine = false;
@@ -570,7 +570,7 @@ struct MFQueue : public IMFQueue<T> {
 	}
 
 	~MFQueue() {
-		Close();
+		Release();
 	}
 
 protected:
@@ -585,14 +585,14 @@ protected:
 
 	std::thread mainThread;
 
-	//Being call by Init(asServer = true) in the mainThread
-	void ServerLoop(std::promise<HRESULT>& initErrPromise) {
+	//Being call by Place(asServer = true) in the mainThread
+	void ServerLoop(std::promise<HRESULT>& placeErrPromise) {
 
 		//Initialize Winsock dll
 		int iResult = WSAStartup(MAKEWORD(2, 2), &_wsaData);
 		if (iResult != S_OK) {
 			printf("WSAStartup failed. Error code: %d\n", iResult);
-			initErrPromise.set_value(S_FALSE);
+			placeErrPromise.set_value(S_FALSE);
 			return;
 		}
 
@@ -601,7 +601,7 @@ protected:
 		if (sock == INVALID_SOCKET) {
 			printf("Socket opening failed. Error code: %d\n", WSAGetLastError());
 			WSACleanup();
-			initErrPromise.set_value(S_FALSE);
+			placeErrPromise.set_value(S_FALSE);
 			return;
 		}
 		
@@ -641,16 +641,16 @@ protected:
 		if (errFlag) {
 			closesocket(sock);
 			WSACleanup();
-			initErrPromise.set_value(S_FALSE);
+			placeErrPromise.set_value(S_FALSE);
 			return;
 		}
 		else {
-			printf("Server initialization successfull!\n");
+			printf("Server placing successfull!\n");
 
 			info.whoIAm = IAmServer;
 			_onLine = true;
 
-			initErrPromise.set_value(S_OK);
+			placeErrPromise.set_value(S_OK);
 		}
 
 		sockaddr_in client, curClient;
@@ -930,14 +930,14 @@ protected:
 		info.whoIAm = IAmUnknown;
 	}
 
-	//Being call by Init(asServer = false) in the mainThread
-	void ClientLoop(std::promise<HRESULT>& initErrPromise) {
+	//Being call by Place(asServer = false) in the mainThread
+	void ClientLoop(std::promise<HRESULT>& placeErrPromise) {
 
 		//Initialize Winsock dll
 		int iResult = WSAStartup(MAKEWORD(2, 2), &_wsaData);
 		if (iResult != 0) {
 			printf("WSAStartup failed. Error code: %d\n", iResult);
-			initErrPromise.set_value(S_FALSE);
+			placeErrPromise.set_value(S_FALSE);
 			return;
 		}
 
@@ -946,7 +946,7 @@ protected:
 		if (sock == INVALID_SOCKET) {
 			printf("Socket opening failed. Error code: %d\n", WSAGetLastError());
 			WSACleanup();
-			initErrPromise.set_value(S_FALSE);
+			placeErrPromise.set_value(S_FALSE);
 			return;
 		}
 
@@ -1025,7 +1025,7 @@ protected:
 			WSACloseEvent(_hEvent);
 			closesocket(sock);
 			WSACleanup();
-			initErrPromise.set_value(S_FALSE);
+			placeErrPromise.set_value(S_FALSE);
 			return;
 		}
 		else {
@@ -1034,7 +1034,7 @@ protected:
 			info.whoIAm = IAmClient;
 			_onLine = true;
 
-			initErrPromise.set_value(S_OK);
+			placeErrPromise.set_value(S_OK);
 		}
 
 //CLIENT ONLINE LOOP
@@ -1097,9 +1097,9 @@ private:
 	DWORD _ev;
 
 	//Returns:
-	//S_OK - if successful, 
-	//S_FALSE - if an error is moderate,
-	//E_ABORT - if an error is hard.
+	//S_OK - on successful, 
+	//S_FALSE - on error which is moderate,
+	//E_ABORT - on error which is hard.
 	HRESULT _SendAndRecvNoDataQuery(const char* action) {
 
 		static sockaddr_in server;

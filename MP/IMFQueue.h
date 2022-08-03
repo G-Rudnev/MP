@@ -35,7 +35,7 @@ public:
 		//int nMessagesFlushed;
 	}	MF_QUEUE_INFO;
 
-	virtual HRESULT Init( /*[in]*/ const std::string& strQueueID, bool asServer, size_t maxLen, time_t timeout) = 0;
+	virtual HRESULT Place( /*[in]*/ const std::string& strQueueID, bool asServer, size_t maxLen, time_t timeout) = 0;
 	virtual bool isOnline() = 0;
 
 	virtual HRESULT Put( /*[in]*/ const std::shared_ptr<T>& pBufferOrFrame) = 0;
@@ -45,7 +45,8 @@ public:
 
 	virtual HRESULT Pop() = 0;
 	virtual HRESULT Clear() = 0;
-	virtual HRESULT Close() = 0;
+
+	virtual HRESULT Release() = 0;
 
 	virtual ~IMFQueue() {}
 };

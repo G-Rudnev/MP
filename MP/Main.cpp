@@ -1,31 +1,5 @@
 #include "MFQueue.h"
 
-/*
-using namespace cv;
-
-bool openCam(VideoCapture& cam, const int width, const int height) {
-
-	auto codec = VideoWriter::fourcc('M', 'J', 'P', 'G');
-
-	int camID;
-	cin >> camID;
-	cam.open(camID, CAP_ANY);
-
-	bool camsOK = false;
-	if (cam.set(CAP_PROP_FRAME_WIDTH, width))
-		if (cam.set(CAP_PROP_FRAME_HEIGHT, height))
-			if (cam.set(CAP_PROP_FOURCC, codec))
-				camsOK = true;
-
-	if (!camsOK || cam.get(CAP_PROP_FRAME_WIDTH) != width) {
-		cerr << "Cams is not OK!" << endl;
-		return false;
-	}
-	else
-		return true;
-}
-*/
-
 class r_ {
 
 	std::mutex _m;
@@ -53,7 +27,7 @@ void put_(MFQueue<MF_BUFFER>& q, const std::shared_ptr<MF_BUFFER>& pBuf) {
 	}
 
 	if (hRes == E_ABORT)
-		q.Close();
+		q.Release();
 }
 
 void get_(MFQueue<MF_BUFFER>& q, std::shared_ptr<MF_BUFFER>& pBuf) {
@@ -66,10 +40,10 @@ void get_(MFQueue<MF_BUFFER>& q, std::shared_ptr<MF_BUFFER>& pBuf) {
 		hRes = q.Get(pBuf, false);
 
 	if (hRes == E_ABORT)
-		q.Close();
+		q.Release();
 }
 
-#define IamSERVER
+//#define IamSERVER
 
 int main() {
 
@@ -81,10 +55,10 @@ int main() {
 	std::shared_ptr pBufOut = std::make_shared<MF_BUFFER>(MF_BUFFER(100000));
 	std::shared_ptr<MF_BUFFER> pBufIn;
 
-	std::thread thr1(&MFQueue<MF_BUFFER>::Init, std::ref(q), "udp://127.0.0.1:12345", true, 10, 100);
+	std::thread thr1(&MFQueue<MF_BUFFER>::Place, std::ref(q), "udp://127.0.0.1:12345", true, 10, 100);
 	Sleep(5);
-	std::thread thr2(&MFQueue<MF_BUFFER>::Init, std::ref(q), "udp://127.0.0.1:12345", true, 10, 100);
-	std::thread thr3(&MFQueue<MF_BUFFER>::Init, std::ref(q1), "udp://127.0.0.1:12345", true, 10, 100);
+	std::thread thr2(&MFQueue<MF_BUFFER>::Place, std::ref(q), "udp://127.0.0.1:12345", true, 10, 100);
+	std::thread thr3(&MFQueue<MF_BUFFER>::Place, std::ref(q1), "udp://127.0.0.1:12345", true, 10, 100);
 
 	thr1.join();
 	thr2.join();
@@ -95,11 +69,11 @@ int main() {
 	q.Size(size);
 	std::cout << size << std::endl;
 
-	q.Close();
+	q.Release();
 
 	Sleep(100);
 
-	q.Init("udp://127.0.0.1:12345", true, 15);
+	q.Place("udp://127.0.0.1:12345", true, 15);
 	while (q.Put(pBufOut) != E_BOUNDS) {}
 
 	q.Size(size);
@@ -116,9 +90,9 @@ int main() {
 		Sleep(250);
 	}
 
-	q.Close();
+	q.Release();
 	q.Clear();
-	q1.Close();
+	q1.Release();
 	q1.Clear();
 
 	//while (q.isOnline())
@@ -128,8 +102,8 @@ int main() {
 
 	MFQueue<MF_BUFFER> q, q1;
 
-	q.Init("udp://127.0.0.1:12345");
-	q1.Init("udp://127.0.0.1:12345");
+	q.Place("udp://127.0.0.1:12345");
+	q1.Place("udp://127.0.0.1:12345");
 
 	std::shared_ptr pBufOut = std::make_shared<MF_BUFFER>(MF_BUFFER(120000));
 	std::shared_ptr<MF_BUFFER> pBufIn1;
