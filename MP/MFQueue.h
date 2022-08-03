@@ -62,11 +62,11 @@ struct MFQueue : public IMFQueue<T> {
 		std::lock_guard _li(infoMutex);
 
 		if (info.whoIAm == IAmServer) {
-			printf("The queue is already in use as a server.\n");
+			printf("The queue is already online as a server.\n");
 			return S_FALSE;
 		}
 		else if (info.whoIAm == IAmClient) {
-			printf("The queue is already in use as a client.\n");
+			printf("The queue is already online as a client.\n");
 			return S_FALSE;
 		}
 		else if (!mainThread.joinable()) {
@@ -124,7 +124,7 @@ struct MFQueue : public IMFQueue<T> {
 		std::lock_guard _li(infoMutex);
 
 		if (!_onLine)
-			printf("Note: the queue is not connected, call Init() method.\n");
+			printf("Note: the queue is offline, call Init() method.\n");
 
 		std::lock_guard _ld(_dataMutex);
 
@@ -250,7 +250,7 @@ struct MFQueue : public IMFQueue<T> {
 		std::lock_guard _li(infoMutex);
 
 		if (!_onLine)
-			printf("Note: the queue is not connected, call Init() method.\n");
+			printf("Note: the queue is offline, call Init() method.\n");
 
 		std::lock_guard _ld(_dataMutex);
 
@@ -394,7 +394,7 @@ struct MFQueue : public IMFQueue<T> {
 		std::lock_guard _li(infoMutex);
 
 		if (!_onLine)
-			printf("Note: the queue is not connected.\n");
+			printf("Note: the queue is offline.\n");
 
 		std::lock_guard _ld(_dataMutex);
 
@@ -432,7 +432,7 @@ struct MFQueue : public IMFQueue<T> {
 		std::lock_guard _li(infoMutex);
 
 		if (!_onLine)
-			printf("Note: the queue is not connected.\n");
+			printf("Note: the queue is offline.\n");
 
 		std::lock_guard _ld(_dataMutex);
 
@@ -468,7 +468,7 @@ struct MFQueue : public IMFQueue<T> {
 		std::lock_guard _li(infoMutex);
 
 		if (!_onLine)
-			printf("Note: the queue is not connected.\n");
+			printf("Note: the queue is offline.\n");
 
 		std::lock_guard _ld(_dataMutex);
 
@@ -498,7 +498,7 @@ struct MFQueue : public IMFQueue<T> {
 
 	//Closes the remote behaviour of the queue object - makes it offline.
 	//Does not clear the queue.
-	//Returns S_FALSE if this object is not online, otherwise returns S_OK.
+	//Returns S_FALSE if this object is offline, otherwise returns S_OK.
 	HRESULT Close() noexcept override {
 
 		if (_onLine) {
