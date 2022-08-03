@@ -1,2 +1,2 @@
 # MP
-Multiprocessing queue by UDP
+Multiprocessing queue based on UDP
