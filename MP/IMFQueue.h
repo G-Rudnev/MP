@@ -8,7 +8,7 @@
 
 #include "MFTypes.h"
 
-template <typename T>
+template <class T>
 class IMFQueue
 {
 

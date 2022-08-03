@@ -47,7 +47,7 @@ bool CheckSocketResult(const T& iResult, const char* errMsg, T&& errVal = SOCKET
 	return false;
 }
 
-template <typename T>
+template <class T>
 struct MFQueue : public IMFQueue<T> {
 
 	const int headerLen = sizeof(Header<T>);
@@ -57,7 +57,7 @@ struct MFQueue : public IMFQueue<T> {
 
 	//Places this queue object online, initializes the remote behaviour of it. Returns S_OK on success, otherwise returns S_FALSE.
 	//In the case of fail, closes all that it has opened.
-	HRESULT Place(/*[in]*/ const std::string& strQueueID, bool asServer = false, size_t maxLen = 64, time_t timeout = 100) override {
+	HRESULT Place(/*[in]*/ const std::string& strQueueID, bool asServer = false, size_t maxLen = -1, time_t timeout = 100) override {
 
 		std::lock_guard _li(infoMutex);
 

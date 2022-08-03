@@ -61,8 +61,6 @@ typedef struct MF_BUFFER : public MF_BASE_DATATYPE<Buffer>
 
 } MF_BUFFER;
 
-
-
 enum WhoIAm {
 	IAmUnknown,
 	IAmServer,
