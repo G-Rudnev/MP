@@ -144,8 +144,6 @@ int main() {
 	std::thread thr1;
 	std::thread thr2;
 
-	srand(time(NULL));
-
 	while (q.isOnline()) {
 
 		if (r.get() > 0.5)
